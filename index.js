@@ -4,8 +4,12 @@ var config = require('./config');
 
 var io = require('socket.io')(config.socketPort);
 var DeviceLocations = require('./models/DeviceLocations');
+var FireHistory = require('./models/FireHistory');
 var mongoose = require('mongoose');
 var cors = require('cors');
+var async = require('async');
+var crud = require('./helpers/crud');
+
 app.use(cors());
 
 var db = mongoose.connection;
@@ -35,6 +39,20 @@ db.on('disconnected', function () {
 mongoose.connect(config.database, { server: { auto_reconnect: true } });
 mongoose.Promise = global.Promise;
 
+crud.connect(config.database, function (err) {
+    if (err) throw err;
+    console.log('Mongo CRUD Connected');
+});
+
+var adminRoute = require('./routes/AdminRoute');
+app.use('/Admin', adminRoute)
+
+var commonRoute = require('./routes/CommonRoute');
+app.use('/Common', commonRoute)
+
+var fireHistoryRoute = require('./routes/FireHistoryRoute');
+app.use('/FireHistory', fireHistoryRoute)
+
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
@@ -50,14 +68,7 @@ io.on('connection', function (socket) {
                 if (err) {
                     console.log("Something wrong when updating data!");
                 } else {
-                    //Emit to web client
-                    DeviceLocations.find({}, function (err, docs) {
-                        if (err) {
-                            res.send(err);
-                        } else {
-                            io.emit('DeviceConnected', docs);
-                        }
-                    });
+                    io.emit('DeviceConnected', data.MarkerId);
                 }
             });
     });
@@ -68,14 +79,7 @@ io.on('connection', function (socket) {
                 console.log("Something wrong when updating data!");
             } else {
                 //Emit to web client
-                DeviceLocations.find({}, function (err, docs) {
-                    if (err) {
-                        res.send(err);
-                    } else {
-                        io.emit('DeviceDisconnected', docs);
-                    }
-                });
-
+                io.emit('DeviceDisconnected', data.MarkerId);
             }
         });
     });
@@ -86,24 +90,74 @@ io.on('connection', function (socket) {
                 console.log("Something wrong when updating data!");
             } else {
                 //Emit to web client
-                DeviceLocations.find({}, function (err, docs) {
-                    if (err) {
-                        res.send(err);
-                    } else {
-                        io.emit('DeviceFireStateChanged', docs);
-                        if(data.isFire){
-                            io.emit('DeviceIsFire', doc);
-                        }
-                    }
-                });
+                var json = new Object();
+                json.MarkerId = data.MarkerId;
+                json.isFire = data.isFire;
+                json.doc = doc;
 
+
+                if (data.isFire) {
+                    async.waterfall([
+                        function (callback) {
+                            //get marker detail
+                            DeviceLocations.findOne({ markerId: data.MarkerId }, function (err, deviceLocation) {
+                                if (err) {
+                                    callback(true, err);
+                                } else {
+                                    callback(null, deviceLocation);
+                                }
+                            });
+                        },
+                        function (deviceLocation, callback) {
+                            //Insert fire FireHistory
+                            var fireHistory = new FireHistory({
+                                markerId: deviceLocation.markerId,
+                                name: deviceLocation.name,
+                                address: deviceLocation.address,
+                                phone: deviceLocation.phone,
+                                lat: deviceLocation.lat,
+                                long: deviceLocation.long,
+                                note: ''
+                            });
+                            fireHistory.save({}, function (err, doc) {
+                                if (err) {
+                                    callback(true, err);
+                                } else {
+                                    callback(null, doc);
+                                }
+                            });
+
+                        }
+                    ], function (err, result) {
+                        json.fireHistoryId = result._id;
+                        io.emit('DeviceFireStateChanged', json);
+                    });
+                } else {
+                    io.emit('DeviceFireStateChanged', json);
+                }
             }
         });
 
     });
 
     socket.on('disconnect', function () {
-        console.log('Client has disconnected to the server!');
+        //Search in DeviceLocations 
+        DeviceLocations.update({ socketId: socket.id }, { $set: { isOnline: false } }, function (err) {
+            if (err) {
+
+            } else {
+
+            }
+        });
+        console.log('Client has disconnected to the server! ' + socket.id);
+        //emit to web 
+        DeviceLocations.find({}, function (err, docs) {
+            if (err) {
+                res.send(err);
+            } else {
+                io.emit('DeviceDisconnected', docs);
+            }
+        });
     });
 });
 
@@ -117,22 +171,5 @@ app.get('/ListDevices', function (req, res) {
     });
 });
 
-app.get('/Create', function (req, res) {
-    var deviceLocation = DeviceLocations({
-        markerId: '3',
-        name: 'Địa điểm 3',
-        address: 'Số abc đường xxx33333',
-        phone: '0433333',
-        lat: 21.024551,
-        long: 105.854970
-    });
-    deviceLocation.save({}, function (err) {
-        if (err) {
-
-        } else {
-
-        }
-    });
-});
 
 app.listen(config.servicePort);
