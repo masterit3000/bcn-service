@@ -7,6 +7,7 @@ var cors = require('cors'); //Cross domain request, using cors to make request f
 var AuthMiddeWare = require('./AuthMiddeWare');
 var FireHistory = require('../models/FireHistory');
 var DeviceLocations = require('../models/DeviceLocations');
+var RegisterDevices = require('../models/RegisterDevices');
 var responseCode = require('../ResponseCode');
 var async = require('async');
 
@@ -21,19 +22,31 @@ router.use('/', function (req, res, next) {
 });
 
 router.get('/GetFireHistory', function (req, res) {
- 
+
     FireHistory.find({}).sort({ fireDate: 'desc' }).exec(function (err, docs) {
         if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, err);
             res.status(500).send(responseObject);
         } else {
-          
+
             var responseObject = cf.buildResponse(responseCode.SUCCESS, docs);
             res.status(200).send(responseObject);
         }
     });
+});
 
-
+//Lay danh sach imei chua duoc su dung & da duoc phe duyet ( status == 1 )
+router.get('/GetListUnusedImei', function (req, res) {
+    RegisterDevices.find({ status: 1 }, function (err, docs) {
+        if (err) {
+            var responseObject = cf.buildResponse(responseCode.ERROR, err);
+            res.status(200).send(responseObject);
+        } else {
+            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+            responseObject.data = docs;
+            res.status(200).send(responseObject);
+        }
+    });
 });
 
 router.post('/InsertFireHistory', jsonParser, function (req, res) {

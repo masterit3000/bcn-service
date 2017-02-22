@@ -7,6 +7,8 @@ var cors = require('cors'); //Cross domain request, using cors to make request f
 var mongoCrud = require('../helpers/crud');
 var AuthMiddeWare = require('./AuthMiddeWare');
 var DeviceLocations = require('../models/DeviceLocations');
+var RegisterDevices = require('../models/RegisterDevices');
+var _ = require('lodash');
 var ObjectID = require('mongodb').ObjectID;
 var router = express.Router();
 
@@ -34,11 +36,11 @@ router.post('/GetData', urlencodedParser, function (req, res) {
     });
 });
 
+
 router.post('/FindOne', urlencodedParser, function (req, res) {
     var table = req.body.table;
     var column = req.body.column;
     var value = req.body.value;
-    console.log(req.body);
     var findCondition = {};
     findCondition[column] = value;
 
@@ -159,27 +161,49 @@ router.post('/DeleteData', jsonParser, function (req, res) {
 
 });
 
-
 router.post('/InsertDeviceLocation', jsonParser, function (req, res) {
-    console.log('zo');
 
     var body = req.body;
+    var areaName = "";
 
-    var deviceLocation = DeviceLocations({
-        markerId: body.markerId,
-        name: body.name,
-        address: body.address,
-        phone: body.phone,
-        lat: body.lat,
-        long: body.long
-    });
-    deviceLocation.save({}, function (err) {
+    mongoCrud.retrieve('areas', { isdeleted: false }, function (err, result) {
         if (err) {
-            res.send(cf.buildResponse(responseCode.ERROR, err));
-        } else {
-            res.send(cf.buildResponse(responseCode.SUCCESS, 'Success'));
+            console.log(err);
+            res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Load areas error'));
+        }
+        else {
+
+            var deviceLocation = DeviceLocations({
+                markerId: body.markerId,
+                name: body.name,
+                address: body.address,
+                phone: body.phone,
+                lat: body.lat,
+                long: body.long,
+                imei: body.imei,
+                desc: body.desc,
+                area: body.area,
+                areaName: body.areaName
+            });
+            deviceLocation.save({}, function (err) {
+                if (err) {
+                    res.send(cf.buildResponse(responseCode.ERROR, err));
+                } else {
+                    RegisterDevices.update({ imei: body.imei }, { $set: { status: 3 } }, function (err2) {
+                        if (err2) {
+                            res.send(cf.buildResponse(responseCode.ERROR, err2));
+                        } else {
+                            res.send(cf.buildResponse(responseCode.SUCCESS, 'Success'));
+                        }
+                    });
+                }
+                //Cap nhat trang thai register devices
+
+            });
         }
     });
+
+
 });
 
 

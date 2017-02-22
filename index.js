@@ -5,6 +5,7 @@ var config = require('./config');
 var io = require('socket.io')(config.socketPort);
 var DeviceLocations = require('./models/DeviceLocations');
 var FireHistory = require('./models/FireHistory');
+var AdminFollowArea = require('./models/AdminFollowArea');
 var mongoose = require('mongoose');
 var cors = require('cors');
 var async = require('async');
@@ -52,6 +53,16 @@ app.use('/Common', commonRoute)
 
 var fireHistoryRoute = require('./routes/FireHistoryRoute');
 app.use('/FireHistory', fireHistoryRoute)
+
+var initDeviceRoute = require('./routes/InitDeviceRoute');
+app.use('/InitDeviceRoute', initDeviceRoute)
+
+var areasRoute = require('./routes/AreasRoute');
+app.use('/Area', areasRoute)
+
+var mainMapRoute = require('./routes/MainMapRoute');
+app.use('/MainMap', mainMapRoute);
+
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
@@ -161,15 +172,25 @@ io.on('connection', function (socket) {
     });
 });
 
-app.get('/ListDevices', function (req, res) {
-    DeviceLocations.find({}, function (err, docs) {
-        if (err) {
-            res.send(err);
-        } else {
-            res.send(docs);
-        }
-    });
-});
+// app.get('/ListDevices/:username', function (req, res) {
+//     //Lay cac area ma user duoc phep
+
+//     AdminFollowArea.find({ userId: req.body.username }, function (err, docs) {
+//         if (err) {
+
+//         } else {
+
+//         }
+//     });
+
+//     DeviceLocations.find({}, function (err, docs) {
+//         if (err) {
+//             res.send(err);
+//         } else {
+//             res.send(docs);
+//         }
+//     });
+// });
 
 
 app.listen(config.servicePort);

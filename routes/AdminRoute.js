@@ -8,6 +8,7 @@ var Admins = require('../models/Admins')
 var moment = require('moment');
 var bodyParser = require('body-parser');
 var jwt = require('jsonwebtoken');
+var AuthMiddeWare = require('./AuthMiddeWare');
 
 var router = express.Router();
 router.use(cors());

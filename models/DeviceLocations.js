@@ -11,5 +11,9 @@ module.exports = mongoose.model('DeviceLocations', new Schema({
     long: Number,
     isFire: {type: Boolean, default: false},
     isOnline: {type: Boolean, default: false},
-    socketId: String
+    socketId: String,
+    imei: String, //connected with phone's imei
+    desc: String,
+    area: String,
+    areaName: String
 }));

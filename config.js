@@ -5,5 +5,7 @@ module.exports = {
     'algorithm': 'aes256',
     'cryptoKey': 'pcccCryptoKey',
     'jwtSessionExpiresTime':'100 days',
-    'jwtKey': 'pcccJWTKey'
+    'jwtKey': 'pcccJWTKey',
+    'basicAuthUsername': 'pccc',
+    'basicAuthPassword': 'basicAuthPassword'
 };
