@@ -15,5 +15,14 @@ module.exports = mongoose.model('DeviceLocations', new Schema({
     imei: String, //connected with phone's imei
     desc: String,
     area: String,
-    areaName: String
+    areaName: String,
+    sms: [
+        {
+            id: Number,
+            phoneNo: String, 
+            name: String
+        }
+    ],
+    powerCordState: Boolean,
+    headSetState: Boolean
 }));

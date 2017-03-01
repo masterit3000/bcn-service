@@ -11,6 +11,7 @@ var AuthMiddeWare = require('./AuthMiddeWare');
 var moment = require('moment');
 var cors = require('cors');
 
+
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -43,6 +44,7 @@ router.post('/ChangeDeviceState', jsonParser, function (req, res) {
         }
     });
 });
+
 
 router.post('/GetRegisterDevice', urlencodedParser, function (req, res) {
 
@@ -89,11 +91,20 @@ router.post('/RegisterDevice', jsonParser, function (req, res) {
                                 var responseObject = cf.buildResponse(responseCode.ERROR, err);
                                 res.status(200).send(responseObject);
                             } else {
-                                var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
-                                responseObject.markerId = docDeviceLocation.markerId;
-                                responseObject.name = docDeviceLocation.name;
-                                responseObject.device = doc;
-                                res.status(200).send(responseObject);
+                                if (docDeviceLocation) {
+                                    var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                                    responseObject.markerId = docDeviceLocation.markerId;
+                                    responseObject.name = docDeviceLocation.name;
+                                    responseObject.sms = docDeviceLocation.sms;
+                                    responseObject.device = doc;
+                                    res.status(200).send(responseObject);
+                                } else {
+                                    var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                                    responseObject.markerId = '';
+                                    responseObject.name = '';
+                                    responseObject.device = doc;
+                                    res.status(200).send(responseObject);
+                                }
                             }
                         });
 

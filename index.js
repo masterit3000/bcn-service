@@ -63,6 +63,9 @@ app.use('/Area', areasRoute)
 var mainMapRoute = require('./routes/MainMapRoute');
 app.use('/MainMap', mainMapRoute);
 
+var deviceRoute = require('./routes/DeviceRoute');
+app.use('/DeviceRoute', deviceRoute);
+
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
