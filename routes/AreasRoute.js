@@ -104,8 +104,10 @@ router.post('/InsertParentArea', urlencodedParser, function (req, res) {
     var body = req.body;
     var id = _.toString(body.id);
     var name = body.name;
+    var lat = body.latitude;
+    var long = body.longtitude;
 
-    var json = { id: id, name: name, childs: [], isdeleted: false };
+    var json = { id: id, name: name, childs: [], isdeleted: false, latitude: lat, longitude: long };
 
     mongoCrud.create('areas', json, function (err, result) {
         if (err) {
@@ -119,11 +121,11 @@ router.post('/InsertParentArea', urlencodedParser, function (req, res) {
 });
 
 
-function findParentLevel(areas, parentId, childId, childName, lastNode) {
+function findParentLevel(areas, parentId, childId, childName, lat, long, lastNode) {
     _.forEach(areas, function (area) {
 
         if (_.isEqual(area.id, parentId)) {
-            area.childs.push({ id: childId, name: childName, childs: [], isdeleted: false });
+            area.childs.push({ id: childId, name: childName, childs: [], isdeleted: false, latitude: lat, longitude: long });
             if (_.isEqual(lastNode, {})) {
                 mongoCrud.update('areas', area, function (err, result) {
                 });
@@ -134,7 +136,7 @@ function findParentLevel(areas, parentId, childId, childName, lastNode) {
             return true;
         } else {
             if (_.size(area.childs) > 0) {
-                findParentLevel(area.childs, parentId, childId, childName, area);
+                findParentLevel(area.childs, parentId, childId, childName, lat, long, area);
             }
         }
     });
@@ -146,11 +148,13 @@ router.post('/InsertChildArea', urlencodedParser, function (req, res) {
     var id = _.toString(body.id);
     var name = body.name;
     var parent = body.parent;
+    var lat = body.latitude;
+    var long = body.longtitude;
 
     mongoCrud.retrieve('areas', {}, function (err, areas) {
         if (err) throw err;
         // for each object returned perform set the property foo == block.
-        findParentLevel(areas, parent, id, name, {});
+        findParentLevel(areas, parent, id, name, lat, long, {});
         var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
         res.status(200).send(responseObject);
     });
@@ -195,11 +199,12 @@ router.post('/DeleteArea', urlencodedParser, function (req, res) {
 });
 
 
-function findParentLevelForUpdate(areas, id, name, lastNode) {
+function findParentLevelForUpdate(areas, id, name,lat,long, lastNode) {
     _.forEach(areas, function (area) {
         if (_.isEqual(area.id, id)) {
             area.name = name;
-
+            area.latitude = lat;
+            area.longitude = long;
             if (_.isEqual(lastNode, {})) {
                 mongoCrud.update('areas', area, function (err, result) {
                 });
@@ -210,7 +215,7 @@ function findParentLevelForUpdate(areas, id, name, lastNode) {
             return true;
         } else {
             if (_.size(area.childs) > 0) {
-                findParentLevelForUpdate(area.childs, id, name, area);
+                findParentLevelForUpdate(area.childs, id, name,lat,long, area);
             }
         }
     });
@@ -220,11 +225,13 @@ router.post('/UpdateArea', urlencodedParser, function (req, res) {
     var body = req.body;
     var id = body.id;
     var name = body.name;
+    var lat = body.lat;
+    var long = body.long;
 
     mongoCrud.retrieve('areas', { isdeleted: false }, function (err, areas) {
         if (err) throw err;
         // for each object returned perform set the property foo == block.
-        findParentLevelForUpdate(areas, id, name, {});
+        findParentLevelForUpdate(areas, id, name,lat,long, {});
         var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
         res.status(200).send(responseObject);
     });
