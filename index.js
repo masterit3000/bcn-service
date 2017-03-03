@@ -66,6 +66,9 @@ app.use('/MainMap', mainMapRoute);
 var deviceRoute = require('./routes/DeviceRoute');
 app.use('/DeviceRoute', deviceRoute);
 
+var sysLog = require('./routes/SysLog');
+app.use('/SysLog', sysLog);
+
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
