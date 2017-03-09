@@ -8,8 +8,10 @@ var Admins = require('../models/Admins')
 var moment = require('moment');
 var bodyParser = require('body-parser');
 var jwt = require('jsonwebtoken');
-var AuthMiddeWare = require('./AuthMiddeWare');
+var Client = require("emailjs/smtp/client");
 
+var AuthMiddeWare = require('./AuthMiddeWare');
+var _ = require('lodash');
 var router = express.Router();
 router.use(cors());
 
@@ -22,7 +24,7 @@ router.post('/CreateUser', jsonParser, function (req, res) {
     var name = req.body.name;
     var email = req.body.email;
     var avatar = req.body.avatar;
-    
+
     var admin = new Admins({
         userId: username,
         password: encryption.encypt(password),
@@ -67,6 +69,41 @@ router.post('/Login', jsonParser, function (req, res) {
             else {
                 res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Sai tên đăng nhập hoặc mật khẩu'));
             }
+        }
+    })
+});
+
+router.post('/ForgetPassword', jsonParser, function (req, res) {
+    var email = req.body.email;
+    Admins.find({ email: email }, function (err, persons) {
+        if (err) {
+            res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Không tìm thấy email trong hệ thống'));
+        }
+        else {
+            if (_.size(persons) === 0) {
+                res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Không tìm thấy email trong hệ thống'));
+            } else {
+                var oldPassword = encryption.decypt(persons[0].password);
+
+                var server = Client.connect({
+                    user: config.senderEmail,
+                    password: config.senderEmailPassword,
+                    host: config.smtpServer,
+                    ssl: config.isUsingSSL
+                });
+
+                // send the message and get a callback with an error or details of the message that was sent
+                server.send({
+                    text: "Mật khẩu của bạn: " + oldPassword,
+                    from: config.senderFromName,
+                    to: email,
+                    subject: "Thay đổi mật khẩu"
+                }, function (err, message) { console.log(err || message); });
+
+                var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Hệ thống đã gửi mật khẩu vào email bạn');
+                res.status(200).send(responseObject);
+            }
+
         }
     })
 });

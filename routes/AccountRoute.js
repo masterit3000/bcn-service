@@ -68,6 +68,7 @@ router.post('/CheckPassword', jsonParser, function (req, res) {
                 var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
                 res.status(200).send(responseObject);
             } else {
+                
                 var responseObject = cf.buildResponse(responseCode.ERROR, 'Password validate failed');
                 res.status(200).send(responseObject);
             }
