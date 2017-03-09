@@ -8,9 +8,9 @@ module.exports = {
     'jwtKey': 'pcccJWTKey',
     'basicAuthUsername': 'pccc',
     'basicAuthPassword': 'basicAuthPassword',
-    'senderEmail': 'apecsoft@apecsoft.asia',
-    'senderEmailPassword': 'Cc50fd77f8',
-    'smtpServer': 'share-mail05.nhanhoa.com',
-    'senderFromName': 'ApecSoft <apecsoft@apecsoft.asia>',
-    'isUsingSSL': true
+    'senderEmail': '', //VD: abc@gmail.com
+    'senderEmailPassword': '', // 123456
+    'smtpServer': '', // smtp server
+    'senderFromName': '', //VD: Dang tuan tu <tu@gmail.com>
+    'isUsingSSL': true // Su dung ssl
 };
