@@ -71,6 +71,7 @@ router.get('/ListAreas', function (req, res) {
         }
     });
 });
+
 function flatternAreas(areas) {
     var arr = [];
     _.forEach(areas, function (area) {

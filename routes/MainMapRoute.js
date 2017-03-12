@@ -8,8 +8,6 @@ var mongoCrud = require('../helpers/crud');
 var AuthMiddeWare = require('./AuthMiddeWare');
 var DeviceLocations = require('../models/DeviceLocations');
 var AdminFollowArea = require('../models/AdminFollowArea');
-
-
 var _ = require('lodash');
 
 var router = express.Router();

@@ -10,7 +10,7 @@ var moment = require('moment');
 var cors = require('cors');
 var DeviceLocations = require('../models/DeviceLocations');
 var DeviceLogs = require('../models/DeviceLogs');
-
+var axios = require('axios');
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -91,9 +91,9 @@ router.use('/GetDeviceLogs', function (req, res, next) {
     AuthMiddeWare.AuthMiddeware(req, res, next);
 });
 
-router.get('/GetDeviceLogs/:markerId', function (req, res) {
+router.post('/GetDeviceLogs', jsonParser, function (req, res) {
 
-    var markerId = req.params.markerId;
+    var markerId = req.body.markerId;
 
     DeviceLogs.find({ markerId: markerId }, null, { sort: { logDate: -1 } }, function (err, docs) {
         if (err) {
@@ -148,9 +148,39 @@ router.post('/InsertDeviceLogFromWeb', jsonParser, function (req, res) {
             });
         }
     });
+});
 
+//Request tu web -> lay chi tiet marker theo markerId
+router.use('/GetMarkerById', function (req, res, next) {
+    AuthMiddeWare.AuthMiddeware(req, res, next);
+});
+router.post('/GetMarkerById', jsonParser, function (req, res) {
+    var markerId = req.body.markerId;
 
+    DeviceLocations.findOne({ markerId: markerId }, function (err, doc) {
+        if (err) {
+            var responseObject = cf.buildResponse(responseCode.ERROR, err);
+            res.status(200).send(responseObject);
+        } else {
+            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+            responseObject.data = doc;
+            res.status(200).send(responseObject);
+        }
+    });
+});
 
+//Request tu Web -> Lay danh sach dia diem xung quanh ( near by locations )
+router.use('/GetNearByPlaces', function (req, res, next) {
+    AuthMiddeWare.AuthMiddeware(req, res, next);
+});
 
+router.post('/GetNearByPlaces', jsonParser, function (req, res) {
+
+    instance.post('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=-33.8670522,151.1957362&radius=500&type=restaurant&keyword=cruise&key=AIzaSyC7YYt-t9Jw_Bv7IruMS-ZlDTCxyUN0mwQ').then(function (response) {
+        console.log(response);
+        var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+        responseObject.data = response;
+        res.status(200).send(responseObject);
+    });
 });
 module.exports = router;

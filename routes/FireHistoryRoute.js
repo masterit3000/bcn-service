@@ -10,6 +10,8 @@ var DeviceLocations = require('../models/DeviceLocations');
 var RegisterDevices = require('../models/RegisterDevices');
 var responseCode = require('../ResponseCode');
 var async = require('async');
+var moment = require('moment');
+var _ = require('lodash');
 
 var router = express.Router();
 var jsonParser = bodyParser.json();
@@ -33,6 +35,45 @@ router.get('/GetFireHistory', function (req, res) {
             res.status(200).send(responseObject);
         }
     });
+});
+
+
+router.post('/GetFireHistoryByDate', jsonParser, function (req, res) {
+    var fromDate = moment(req.body.fromDate, "DD/MM/YYYY");
+    var toDate = moment(req.body.toDate, "DD/MM/YYYY").add('days', 1);
+
+    FireHistory.aggregate(
+        [
+            {
+                $match: {
+                    fireDate: { $gte: new Date(fromDate), $lt: new Date(toDate) }
+                }
+            },
+            {
+                $group:
+                {
+                    _id: { month: { $month: "$fireDate" }, day: { $dayOfMonth: "$fireDate" }, year: { $year: "$fireDate" } },
+                    total: {
+                        $sum: 1
+                    }
+                }
+            }
+        ],
+        function (err, docs) {
+            if (err) {
+                var responseObject = cf.buildResponse(responseCode.ERROR, err);
+                res.status(200).send(responseObject);
+            } else {
+                var docsResponse = [];
+                var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                _.forEachRight(docs, function (doc) {
+                    docsResponse.push({ date: doc._id.day + "/" + doc._id.month + "/" + doc._id.year, "Tổng số vụ cháy": doc.total });
+                });
+                responseObject.data = docsResponse;
+                res.status(200).send(responseObject);
+            }
+        }
+    );
 });
 
 //Lay danh sach imei chua duoc su dung & da duoc phe duyet ( status == 1 )

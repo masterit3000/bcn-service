@@ -12,5 +12,6 @@ module.exports = {
     'senderEmailPassword': '', // 123456
     'smtpServer': '', // smtp server
     'senderFromName': '', //VD: Dang tuan tu <tu@gmail.com>
-    'isUsingSSL': true // Su dung ssl
+    'isUsingSSL': true, // Su dung ssl,
+    'GoogleMapAPIKey': 'AIzaSyC7YYt-t9Jw_Bv7IruMS-ZlDTCxyUN0mwQ'
 };
