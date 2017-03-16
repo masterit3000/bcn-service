@@ -316,35 +316,48 @@ router.post('/SetFollowArea', urlencodedParser, function (req, res) {
     var username = body.username;
     var areaId = body.areaId;
     var status = body.status;
-    console.log(body);
-    if (_.toInteger(status) === 0) {
-        //Theo doi
-        var adminFollowArea = new AdminFollowArea({
-            userId: username,
-            areaId: _.toInteger(areaId)
-        });
+    
+    //Get trang thai hien tai theo userId va areaId
 
-        adminFollowArea.save({}, function (err) {
-            if (err) {
-                var responseObject = cf.buildResponse(responseCode.ERROR, err);
-                res.status(200).send(responseObject);
+    AdminFollowArea.count({userId: username, areaId: _.toInteger(areaId)}, function (err, count) {
+        if (err) {
+            var responseObject = cf.buildResponse(responseCode.ERROR, err);
+            res.status(200).send(responseObject);
+        } else{
+            console.log(count);
+            console.log(body);
+            if (_.toInteger(status) === 0 && count === 0) {
+                //Theo doi
+                var adminFollowArea = new AdminFollowArea({
+                    userId: username,
+                    areaId: _.toInteger(areaId)
+                });
+
+                adminFollowArea.save({}, function (err) {
+                    if (err) {
+                        var responseObject = cf.buildResponse(responseCode.ERROR, err);
+                        res.status(200).send(responseObject);
+                    } else {
+                        var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                        res.status(200).send(responseObject);
+                    }
+                });
             } else {
-                var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
-                res.status(200).send(responseObject);
+                //Bo theo doi
+                AdminFollowArea.remove({ userId: username, areaId: areaId }, function (err) {
+                    if (err) {
+                        var responseObject = cf.buildResponse(responseCode.ERROR, err);
+                        res.status(200).send(responseObject);
+                    } else {
+                        var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                        res.status(200).send(responseObject);
+                    }
+                });
             }
-        });
-    } else {
-        //Bo theo doi
-        AdminFollowArea.remove({ userId: username, areaId: areaId }, function (err) {
-            if (err) {
-                var responseObject = cf.buildResponse(responseCode.ERROR, err);
-                res.status(200).send(responseObject);
-            } else {
-                var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
-                res.status(200).send(responseObject);
-            }
-        });
-    }
+        }
+    });
+
+    
 
 
 });
