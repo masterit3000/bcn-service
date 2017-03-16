@@ -9,6 +9,8 @@ var responseCode = require('../ResponseCode');
 var async = require('async');
 var mongoCrud = require('../helpers/crud');
 var AdminFollowArea = require('../models/AdminFollowArea');
+var AreaIndex = require('../models/AreaIndex');
+var ObjectID = require('mongodb').ObjectID;
 var _ = require('lodash');
 
 var router = express.Router();
@@ -59,6 +61,19 @@ router.post('/CheckExistId', urlencodedParser, function (req, res) {
 });
 
 router.get('/ListAreas', function (req, res) {
+    //Check table Area index if does not have row that have areaIndexId = 1 then we insert 
+    AreaIndex.count({ areaIndexId: 1 }, function (err, count) {
+        if (!err) {
+            if (count === 0) {
+                var areaIndex = new AreaIndex({
+                    areaIndexId: 1,
+                    seq: 0
+                });
+                areaIndex.save({}, function (err) { });
+            }
+        }
+    });
+
     mongoCrud.retrieve('areas', { isdeleted: false }, function (err, result) {
         if (err) {
             console.log(err);
@@ -105,30 +120,84 @@ router.get('/ListAreasNoParent', function (req, res) {
 
 router.post('/InsertParentArea', urlencodedParser, function (req, res) {
     var body = req.body;
-    var id = _.toString(body.id);
     var name = body.name;
     var lat = body.latitude;
     var long = body.longtitude;
+    var shortName = body.shortName;
 
-    var json = { id: id, name: name, childs: [], isdeleted: false, latitude: lat, longitude: long };
+    //Get id from areaIndexId
 
-    mongoCrud.create('areas', json, function (err, result) {
+    AreaIndex.findOne({ areaIndexId: 1 }, function (err, doc) {
         if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, err);
             res.status(200).send(responseObject);
         } else {
-            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
-            res.status(200).send(responseObject);
+            var newId = doc.seq + 1;
+            //Update the id
+            AreaIndex.update({ "areaIndexId": 1 }, { $set: { seq: newId } }, function (err) {
+            });
+            //Insert 
+            var json = { id: newId, name: name, shortName: shortName, childs: [], isdeleted: false, latitude: lat, longitude: long };
+
+            mongoCrud.create('areas', json, function (err, result) {
+                if (err) {
+                    var responseObject = cf.buildResponse(responseCode.ERROR, err);
+                    res.status(200).send(responseObject);
+                } else {
+                    var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                    res.status(200).send(responseObject);
+                }
+            });
         }
     });
 });
 
 
-function findParentLevel(areas, parentId, childId, childName, lat, long, lastNode) {
-    _.forEach(areas, function (area) {
+router.post('/InsertChildArea', urlencodedParser, function (req, res) {
+    var body = req.body;
+    var name = body.name;
+    var shortName = body.shortName;
+    var parent = body.parent;
+    var lat = body.latitude;
+    var long = body.longtitude;
 
-        if (_.isEqual(area.id, parentId)) {
-            area.childs.push({ id: childId, name: childName, childs: [], isdeleted: false, latitude: lat, longitude: long });
+    AreaIndex.findOne({ areaIndexId: 1 }, function (err, doc) {
+        if (err) {
+            var responseObject = cf.buildResponse(responseCode.ERROR, err);
+            res.status(200).send(responseObject);
+        } else {
+
+            var newId = doc.seq + 1;
+
+
+            //Update the id
+            AreaIndex.update({ "areaIndexId": 1 }, { $set: { seq: newId } }, function (err) {
+            });
+
+            mongoCrud.retrieve('areas', {}, function (err, areas) {
+                if (err) {
+                    var responseObject = cf.buildResponse(responseCode.ERROR, err);
+                    res.status(200).send(responseObject);
+                } else {
+
+                    // for each object returned perform set the property foo == block.
+                    findParentLevel(areas, parent, newId, name, shortName, lat, long, {});
+                    var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+                    res.status(200).send(responseObject);
+                }
+
+            });
+        }
+    });
+});
+
+
+
+function findParentLevel(areas, parentId, childId, childName, shortName, lat, long, lastNode) {
+
+    _.forEach(areas, function (area) {
+        if (_.toInteger(area.id) === _.toInteger(parentId)) {
+            area.childs.push({ _id: new ObjectID(), id: childId, name: childName, shortName: shortName, childs: [], isdeleted: false, latitude: lat, longitude: long });
             if (_.isEqual(lastNode, {})) {
                 mongoCrud.update('areas', area, function (err, result) {
                 });
@@ -139,41 +208,24 @@ function findParentLevel(areas, parentId, childId, childName, lat, long, lastNod
             return true;
         } else {
             if (_.size(area.childs) > 0) {
-                findParentLevel(area.childs, parentId, childId, childName, lat, long, area);
+                findParentLevel(area.childs, parentId, childId, childName, shortName, lat, long, area);
             }
         }
     });
 
 }
 
-router.post('/InsertChildArea', urlencodedParser, function (req, res) {
-    var body = req.body;
-    var id = _.toString(body.id);
-    var name = body.name;
-    var parent = body.parent;
-    var lat = body.latitude;
-    var long = body.longtitude;
-
-    mongoCrud.retrieve('areas', {}, function (err, areas) {
-        if (err) throw err;
-        // for each object returned perform set the property foo == block.
-        findParentLevel(areas, parent, id, name, lat, long, {});
-        var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
-        res.status(200).send(responseObject);
-    });
-
-});
-
 
 function findParentLevelForDelete(areas, id, lastNode) {
     _.forEach(areas, function (area) {
-        if (_.isEqual(area.id, id)) {
+        if (_.toInteger(area.id) === _.toInteger(id)) {
             area.isdeleted = true;
             if (_.isEqual(lastNode, {})) {
                 mongoCrud.update('areas', area, function (err, result) {
                 });
             } else {
                 mongoCrud.update('areas', lastNode, function (err, result) {
+
                 });
             }
             return true;
@@ -190,7 +242,6 @@ router.post('/DeleteArea', urlencodedParser, function (req, res) {
     var body = req.body;
     var id = body.id;
 
-
     mongoCrud.retrieve('areas', {}, function (err, areas) {
         if (err) throw err;
         // for each object returned perform set the property foo == block.
@@ -202,10 +253,11 @@ router.post('/DeleteArea', urlencodedParser, function (req, res) {
 });
 
 
-function findParentLevelForUpdate(areas, id, name, lat, long, lastNode) {
+function findParentLevelForUpdate(areas, id, name, shortName, lat, long, lastNode) {
     _.forEach(areas, function (area) {
-        if (_.isEqual(area.id, id)) {
+        if (_.toInteger(area.id) === _.toInteger(id)) {
             area.name = name;
+            area.shortName = shortName;
             area.latitude = lat;
             area.longitude = long;
             if (_.isEqual(lastNode, {})) {
@@ -218,7 +270,7 @@ function findParentLevelForUpdate(areas, id, name, lat, long, lastNode) {
             return true;
         } else {
             if (_.size(area.childs) > 0) {
-                findParentLevelForUpdate(area.childs, id, name, lat, long, area);
+                findParentLevelForUpdate(area.childs, id, name, shortName, lat, long, area);
             }
         }
     });
@@ -228,13 +280,14 @@ router.post('/UpdateArea', urlencodedParser, function (req, res) {
     var body = req.body;
     var id = body.id;
     var name = body.name;
+    var shortName = body.shortName;
     var lat = body.lat;
     var long = body.long;
 
     mongoCrud.retrieve('areas', { isdeleted: false }, function (err, areas) {
         if (err) throw err;
         // for each object returned perform set the property foo == block.
-        findParentLevelForUpdate(areas, id, name, lat, long, {});
+        findParentLevelForUpdate(areas, id, name, shortName, lat, long, {});
         var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
         res.status(200).send(responseObject);
     });
