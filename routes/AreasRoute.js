@@ -316,12 +316,12 @@ router.post('/SetFollowArea', urlencodedParser, function (req, res) {
     var username = body.username;
     var areaId = body.areaId;
     var status = body.status;
-
+    console.log(body);
     if (_.toInteger(status) === 0) {
         //Theo doi
         var adminFollowArea = new AdminFollowArea({
             userId: username,
-            areaId: areaId
+            areaId: _.toInteger(areaId)
         });
 
         adminFollowArea.save({}, function (err) {

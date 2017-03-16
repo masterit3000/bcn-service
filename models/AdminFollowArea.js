@@ -5,5 +5,5 @@ var Schema = mongoose.Schema;
 // set up a mongoose model and pass it using module.exports
 module.exports = mongoose.model('AdminFollowArea', new Schema({
     userId: String,
-    areaId: String
+    areaId: Number
 }));
