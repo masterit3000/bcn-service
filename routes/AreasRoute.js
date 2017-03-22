@@ -9,7 +9,7 @@ var responseCode = require('../ResponseCode');
 var async = require('async');
 var mongoCrud = require('../helpers/crud');
 var AdminFollowArea = require('../models/AdminFollowArea');
-var AreaIndex = require('../models/AreaIndex');
+var Indexing = require('../models/Indexing');
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('lodash');
 
@@ -43,7 +43,6 @@ function checkNestedId(areas, id) {
 }
 
 
-
 router.post('/CheckExistId', urlencodedParser, function (req, res) {
     var id = req.body.id;
     mongoCrud.retrieve('areas', function (err, areas) {
@@ -61,15 +60,15 @@ router.post('/CheckExistId', urlencodedParser, function (req, res) {
 });
 
 router.get('/ListAreas', function (req, res) {
-    //Check table Area index if does not have row that have areaIndexId = 1 then we insert 
-    AreaIndex.count({ areaIndexId: 1 }, function (err, count) {
+    //Check table Area index if does not have row that have type='AREA' then we insert 
+    Indexing.count({ type: 'AREA' }, function (err, count) {
         if (!err) {
             if (count === 0) {
-                var areaIndex = new AreaIndex({
-                    areaIndexId: 1,
+                var indexing = new Indexing({
+                    type: 'AREA',
                     seq: 0
                 });
-                areaIndex.save({}, function (err) { });
+                indexing.save({}, function (err) { });
             }
         }
     });
@@ -90,13 +89,16 @@ router.get('/ListAreas', function (req, res) {
 function flatternAreas(areas) {
     var arr = [];
     _.forEach(areas, function (area) {
-        arr.push({ id: area.id, name: area.name });
+        if (!area.isdeleted) {
+            arr.push({ id: area.id, name: area.name, shortName: area.shortName, latitude: area.latitude, longitude: area.longitude });
+        }
         if (_.size(area.childs) > 0) {
             var temp = flatternAreas(area.childs);
             _.forEach(temp, function (child) {
-                arr.push({ id: child.id, name: child.name });
+                if (!child.isdeleted) {
+                    arr.push({ id: child.id, name: child.name, shortName: child.shortName, latitude: child.latitude, longitude: child.longitude });
+                }
             });
-
         }
     });
     return arr;
@@ -105,7 +107,6 @@ function flatternAreas(areas) {
 router.get('/ListAreasNoParent', function (req, res) {
     mongoCrud.retrieve('areas', { isdeleted: false }, function (err, result) {
         if (err) {
-            console.log(err);
             res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Load areas error'));
         }
         else {
@@ -125,16 +126,16 @@ router.post('/InsertParentArea', urlencodedParser, function (req, res) {
     var long = body.longtitude;
     var shortName = body.shortName;
 
-    //Get id from areaIndexId
+    //Get id from Indexing
 
-    AreaIndex.findOne({ areaIndexId: 1 }, function (err, doc) {
+    Indexing.findOne({ type: 'AREA' }, function (err, doc) {
         if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, err);
             res.status(200).send(responseObject);
         } else {
             var newId = doc.seq + 1;
             //Update the id
-            AreaIndex.update({ "areaIndexId": 1 }, { $set: { seq: newId } }, function (err) {
+            Indexing.update({ type: 'AREA' }, { $set: { seq: newId } }, function (err) {
             });
             //Insert 
             var json = { id: newId, name: name, shortName: shortName, childs: [], isdeleted: false, latitude: lat, longitude: long };
@@ -161,7 +162,7 @@ router.post('/InsertChildArea', urlencodedParser, function (req, res) {
     var lat = body.latitude;
     var long = body.longtitude;
 
-    AreaIndex.findOne({ areaIndexId: 1 }, function (err, doc) {
+    Indexing.findOne({ type: 'AREA' }, function (err, doc) {
         if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, err);
             res.status(200).send(responseObject);
@@ -171,7 +172,7 @@ router.post('/InsertChildArea', urlencodedParser, function (req, res) {
 
 
             //Update the id
-            AreaIndex.update({ "areaIndexId": 1 }, { $set: { seq: newId } }, function (err) {
+            Indexing.update({ type: 'AREA' }, { $set: { seq: newId } }, function (err) {
             });
 
             mongoCrud.retrieve('areas', {}, function (err, areas) {
@@ -316,16 +317,14 @@ router.post('/SetFollowArea', urlencodedParser, function (req, res) {
     var username = body.username;
     var areaId = body.areaId;
     var status = body.status;
-    
+
     //Get trang thai hien tai theo userId va areaId
 
-    AdminFollowArea.count({userId: username, areaId: _.toInteger(areaId)}, function (err, count) {
+    AdminFollowArea.count({ userId: username, areaId: _.toInteger(areaId) }, function (err, count) {
         if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, err);
             res.status(200).send(responseObject);
-        } else{
-            console.log(count);
-            console.log(body);
+        } else {
             if (_.toInteger(status) === 0 && count === 0) {
                 //Theo doi
                 var adminFollowArea = new AdminFollowArea({
@@ -357,7 +356,7 @@ router.post('/SetFollowArea', urlencodedParser, function (req, res) {
         }
     });
 
-    
+
 
 
 });

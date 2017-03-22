@@ -11,6 +11,9 @@ var cors = require('cors');
 var DeviceLocations = require('../models/DeviceLocations');
 var DeviceLogs = require('../models/DeviceLogs');
 var axios = require('axios');
+var Indexing = require('../models/Indexing');
+var async = require('async');
+var _ = require('lodash');
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -183,4 +186,66 @@ router.post('/GetNearByPlaces', jsonParser, function (req, res) {
         res.status(200).send(responseObject);
     });
 });
+
+router.post('/GetDeviceId', jsonParser, function (req, res) {
+    var body = req.body;
+    var prefix = body.prefix;
+
+
+    async.waterfall([
+        function (callback) {
+            //Kiem tra xem da insert device = 0 chua
+            Indexing.count({ type: 'DEVICE' }, function (err, count) {
+                if (!err) {
+                    if (count === 0) {
+                        var indexing = new Indexing({
+                            type: 'DEVICE',
+                            seq: 0
+                        });
+                        indexing.save({}, function (err) {
+                            if (!err) {
+                                callback(null);
+                            } else {
+                                callback(true, err);
+                            }
+                        });
+                    } else {
+                        callback(null);
+                    }
+                }
+            });
+        },
+        function (callback) {
+            //Lay ve id 
+            Indexing.findOne({ type: 'DEVICE' }, function (err, doc) {
+                if (err) {
+                    callback(true, err);
+                } else {
+                    var seq = doc.seq + 1;
+                    var id = prefix + _.padStart(_.toString(seq), 4, '0');
+                    callback(null, id);
+                }
+            });
+        }
+    ], function (err, result) {
+        if (!err) {
+            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+            responseObject.id = result;
+            res.status(200).send(responseObject);
+        } else {
+            var responseObject = cf.buildResponse(responseCode.ERROR, 'Error');
+            responseObject.id = '';
+            res.status(200).send(responseObject);
+        }
+
+    });
+
+
+});
+
+
+function calculateDeviceId(prefix) {
+
+
+}
 module.exports = router;

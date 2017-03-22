@@ -5,7 +5,7 @@
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 //
-module.exports = mongoose.model('AreaIndex', new Schema({
-    areaIndexId: Number, // Enter any number just for update
+module.exports = mongoose.model('Indexing', new Schema({
+    type: String, // Enter any number just for update
     seq: { type: Number, default: 0 }
 }));
