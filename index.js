@@ -79,6 +79,9 @@ var accountRoute = require('./routes/AccountRoute');
 app.use('/Account', accountRoute);
 
 
+var fireHydrant = require('./routes/FireHydrant');
+app.use('/FireHydrant', fireHydrant);
+
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
