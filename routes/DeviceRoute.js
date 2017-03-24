@@ -14,12 +14,17 @@ var axios = require('axios');
 var Indexing = require('../models/Indexing');
 var async = require('async');
 var _ = require('lodash');
+var RegisterDevices = require('../models/RegisterDevices');
+var multer = require('multer');
+
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 var router = express.Router();
 router.use(cors());
 router.use(basicAuthentication.basicAuth());
+router.use(bodyParser.json({ limit: '50mb' }));
+
 //.../DeviceRoute/
 
 //Request tu Android -> neu day usb bi thao
@@ -191,7 +196,6 @@ router.post('/GetDeviceId', jsonParser, function (req, res) {
     var body = req.body;
     var prefix = body.prefix;
 
-
     async.waterfall([
         function (callback) {
             //Kiem tra xem da insert device = 0 chua
@@ -244,8 +248,108 @@ router.post('/GetDeviceId', jsonParser, function (req, res) {
 });
 
 
-function calculateDeviceId(prefix) {
+router.post('/InsertDeviceLocation', jsonParser, function (req, res) {
+
+    var body = req.body;
+    var areaName = "";
+    var prefix = body.shortName;
+
+    async.waterfall([
+        function (callback) {
+            //Kiem tra xem da insert device = 0 chua
+            Indexing.count({ type: 'DEVICE' }, function (err, count) {
+                if (!err) {
+                    if (count === 0) {
+                        var indexing = new Indexing({
+                            type: 'DEVICE',
+                            seq: 0
+                        });
+                        indexing.save({}, function (err) {
+                            if (!err) {
+                                callback(null);
+                            } else {
+                                callback(true, err);
+                            }
+                        });
+                    } else {
+                        callback(null);
+                    }
+                }
+            });
+        },
+        function (callback) {
+            //Lay ve id 
+            Indexing.findOne({ type: 'DEVICE' }, function (err, doc) {
+                if (err) {
+                    callback(true, err);
+                } else {
+                    var seq = doc.seq + 1;
+                    var id = prefix + _.padStart(_.toString(seq), 4, '0');
+                    callback(null, id, seq);
+                }
+            });
+        },
+        function (id, seq, callback) {
+            //Update lai indexing tang them 1
+            Indexing.update({ type: 'DEVICE' }, { $set: { seq: seq } }, function (err) {
+            });
+            //Nhay xuong luon ko cho update
+            callback(null, id);
+        }
+        ,
+        function (id, callback) {
+            console.log(id);
+            //Luu databases
+            var deviceLocation = DeviceLocations({
+                markerId: id,
+                name: body.name,
+                address: body.address,
+                phone: body.phone,
+                lat: body.lat,
+                long: body.long,
+                imei: body.imei,
+                desc: body.desc,
+                area: body.area,
+                areaName: body.areaName,
+                sms: body.sms,
+                thongTinCoSo: body.thongTinCoSo,
+                thumbImg: body.thumbImg
+            });
+            deviceLocation.save({}, function (err) {
+                if (err) {
+                    callback(true, err);
+                } else {
+                    callback(null);
+                }
+            });
+        },
+
+        function (callback) {
+            //Update lai trang thai cua Android devices ve da su dung
+            RegisterDevices.update({ imei: body.imei }, { $set: { status: 2 } }, function (err2) {
+                if (err2) {
+                    callback(true, err2);
+                } else {
+                    callback(null, '');
+                }
+            });
+        },
+
+    ], function (err, result) {
+        if (!err) {
+            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+            res.status(200).send(responseObject);
+        } else {
+            var responseObject = cf.buildResponse(responseCode.ERROR, 'Error');
+            res.status(200).send(responseObject);
+        }
+
+    });
 
 
-}
+
+});
+
+
+
 module.exports = router;

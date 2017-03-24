@@ -1,7 +1,8 @@
 var express = require('express');
 var app = express();
 var config = require('./config');
-
+var responseCode = require('./ResponseCode');
+var cf = require('./helpers/CF');
 var io = require('socket.io')(config.socketPort);
 var DeviceLocations = require('./models/DeviceLocations');
 var FireHistory = require('./models/FireHistory');
@@ -10,8 +11,13 @@ var mongoose = require('mongoose');
 var cors = require('cors');
 var async = require('async');
 var crud = require('./helpers/crud');
+var multer = require('multer');
+var _ = require('lodash');
 
 app.use(cors());
+
+//Allow get request to public folder
+app.use(express.static('public'));
 
 var db = mongoose.connection;
 
@@ -201,5 +207,39 @@ io.on('connection', function (socket) {
 //     });
 // });
 
+
+//File upload module
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './public/uploads/DeviceThumb/')
+    },
+    filename: function (req, file, cb) {
+        if (_.endsWith(file.mimetype, 'jpeg')) {
+            cb(null, new Date().getTime() + ".jpeg");
+        } else if (_.endsWith(file.mimetype, 'jpg')) {
+            cb(null, new Date().getTime() + ".jpg");
+        } else if (_.endsWith(file.mimetype, 'png')) {
+            cb(null, new Date().getTime() + ".png");
+        } else if (_.endsWith(file.mimetype, 'gif')) {
+            cb(null, new Date().getTime() + ".gif");
+        }
+    }
+});
+
+var upload = multer({ storage: storage }).array('files', 2);
+
+app.post('/DeviceRoute/PhotoUpload', function (req, res, next) {
+    var bigRes = res;
+    upload(req, res, function (err) {
+        if (err) {
+            var responseObject = cf.buildResponse(responseCode.ERROR, err);
+            bigRes.status(200).send(responseObject);
+        } else {
+            var responseObject = cf.buildResponse(responseCode.SUCCESS, 'Success');
+            responseObject.files = req.files[0].filename;
+            bigRes.status(200).send(responseObject);
+        }
+    });
+});
 
 app.listen(config.servicePort);

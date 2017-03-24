@@ -24,5 +24,7 @@ module.exports = mongoose.model('DeviceLocations', new Schema({
         }
     ],
     powerCordState: Boolean,
-    headSetState: Boolean
+    headSetState: Boolean,
+    thongTinCoSo: String,
+    thumbImg: String
 }));

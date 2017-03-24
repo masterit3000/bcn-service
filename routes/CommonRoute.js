@@ -161,51 +161,6 @@ router.post('/DeleteData', jsonParser, function (req, res) {
 
 });
 
-router.post('/InsertDeviceLocation', jsonParser, function (req, res) {
-
-    var body = req.body;
-    var areaName = "";
-    console.log(body.sms);
-
-    mongoCrud.retrieve('areas', { isdeleted: false }, function (err, result) {
-        if (err) {
-            res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Load areas error'));
-        }
-        else {
-
-            var deviceLocation = DeviceLocations({
-                markerId: body.markerId,
-                name: body.name,
-                address: body.address,
-                phone: body.phone,
-                lat: body.lat,
-                long: body.long,
-                imei: body.imei,
-                desc: body.desc,
-                area: body.area,
-                areaName: body.areaName,
-                sms: body.sms
-            });
-            deviceLocation.save({}, function (err) {
-                if (err) {
-                    res.send(cf.buildResponse(responseCode.ERROR, err));
-                } else {
-                    RegisterDevices.update({ imei: body.imei }, { $set: { status: 2 } }, function (err2) {
-                        if (err2) {
-                            res.send(cf.buildResponse(responseCode.ERROR, err2));
-                        } else {
-                            res.send(cf.buildResponse(responseCode.SUCCESS, 'Success'));
-                        }
-                    });
-                }
-                //Cap nhat trang thai register devices
-
-            });
-        }
-    });
-
-
-});
 
 
 module.exports = router;
