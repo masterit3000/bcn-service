@@ -162,5 +162,27 @@ router.post('/DeleteData', jsonParser, function (req, res) {
 });
 
 
+router.post('/DeleteDataById', jsonParser, function (req, res) {
+    var table = req.body.table;
+    var values = req.body.values;
+    var isError = false;
+    for (var i = 0; i < values.length; i++) {
+        var obj = Object();
+        obj._id = ObjectID(values[i]);
+        mongoCrud.delete(table, obj, function (err, result) {
+            if (err) {
+                isError = true;
+            }
+        });
+    }
+    if (isError) {
+        res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Delete ' + table + ' Error'));
+    } else {
+        res.status(200).send(cf.buildResponse(responseCode.SUCCESS, 'Delete ' + table + ' Success'));
+    }
+
+});
+
+
 
 module.exports = router;

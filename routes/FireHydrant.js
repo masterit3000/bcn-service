@@ -43,7 +43,7 @@ router.post('/InsertFireHydrant', jsonParser, function (req, res) {
     });
 
     fireHydrant.save({}, function (err) {
-       if (err) {
+        if (err) {
             var responseObject = cf.buildResponse(responseCode.ERROR, 'message');
             res.status(500).send(responseObject);
         } else {
@@ -52,3 +52,5 @@ router.post('/InsertFireHydrant', jsonParser, function (req, res) {
         }
     });
 });
+
+module.exports = router;
