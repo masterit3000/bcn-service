@@ -56,10 +56,6 @@ router.post('/InsertFireHydrant', jsonParser, function (req, res) {
 });
 
 function getDistanceFromLatLonInMet(lat1, lon1, lat2, lon2) {
-    console.log(lat1);
-    console.log(lon1);
-    console.log(lat2);
-    console.log(lon2);
     var R = 6371; // Radius of the earth in km
     var dLat = deg2rad(lat2 - lat1);  // deg2rad below
     var dLon = deg2rad(lon2 - lon1);
@@ -95,8 +91,15 @@ router.post('/NearByFireHydrant', jsonParser, function (req, res) {
                 var distanceInMet = getDistanceFromLatLonInMet(doc.lat, doc.long, req.body.lat, req.body.long);
 
                 if (distanceInMet <= req.body.distance) {
-                    doc.distance = distanceInMet;
-                    nearByPlaces.push(doc);
+                    var clonedDoc = {};
+                    clonedDoc.name = doc.name;
+                    clonedDoc.address = doc.address;
+                    clonedDoc.desc = doc.desc;
+                    clonedDoc.lat = doc.lat;
+                    clonedDoc.long = doc.long;
+                    clonedDoc.distance = Math.floor(distanceInMet) + ' m';
+                    console.log(clonedDoc);
+                    nearByPlaces.push(clonedDoc);
                 }
             });
             callback(null, nearByPlaces);
