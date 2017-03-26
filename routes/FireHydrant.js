@@ -97,8 +97,7 @@ router.post('/NearByFireHydrant', jsonParser, function (req, res) {
                     clonedDoc.desc = doc.desc;
                     clonedDoc.lat = doc.lat;
                     clonedDoc.long = doc.long;
-                    clonedDoc.distance = Math.floor(distanceInMet) + ' abcm';
-                    console.log(clonedDoc);
+                    clonedDoc.distance = Math.floor(distanceInMet) + ' m';
                     nearByPlaces.push(clonedDoc);
                 }
             });
