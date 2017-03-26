@@ -92,7 +92,10 @@ router.post('/NearByFireHydrant', jsonParser, function (req, res) {
             //Get by id
             var nearByPlaces = [];
             _.forEach(docs, function (doc) {
-                if (getDistanceFromLatLonInMet(doc.lat, doc.long, req.body.lat, req.body.long) <= req.body.distance) {
+                var distanceInMet = getDistanceFromLatLonInMet(doc.lat, doc.long, req.body.lat, req.body.long);
+
+                if (distanceInMet <= req.body.distance) {
+                    doc.distance = distanceInMet;
                     nearByPlaces.push(doc);
                 }
             });
