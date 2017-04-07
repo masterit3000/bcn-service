@@ -6,8 +6,11 @@ module.exports = {
     'cryptoKey': 'pcccCryptoKey',
     'jwtSessionExpiresTime': '100 days',
     'jwtKey': 'pcccJWTKey',
+    'jwtKeyCustomer': 'pcccJWTKeyCustomer',
     'basicAuthUsername': 'pccc',
     'basicAuthPassword': 'basicAuthPassword',
+    'basicAuthUsernameCustomer': 'pcccCustomer',
+    'basicAuthPasswordCustomer': 'basicAuthPasswordCustomer',
     'senderEmail': '', //VD: abc@gmail.com
     'senderEmailPassword': '', // 123456
     'smtpServer': '', // smtp server
