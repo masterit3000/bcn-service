@@ -1,5 +1,5 @@
 module.exports = {
-    'database': 'mongodb://pccc:1234567@103.48.83.139:27017/PCCC',
+    'database': 'mongodb://adminpccc:adminpccc_123@localhost:27017/pccc',
     'socketPort': 8899,
     'servicePort': 8898,
     'algorithm': 'aes256',
