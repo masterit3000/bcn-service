@@ -42,6 +42,7 @@ router.post('/InsertFireHydrant', jsonParser, function (req, res) {
         desc: body.desc,
         lat: body.lat,
         long: body.long,
+		areaid:body.areaid
     });
 
     fireHydrant.save({}, function (err) {
@@ -119,14 +120,14 @@ router.post('/NearByFireHydrant', jsonParser, function (req, res) {
 
 router.post('/UpdateFireHydrant', jsonParser, function (req, res) {
     var body = req.body;
-
     FireHydrant.update({ _id: ObjectID(body.id) }, {
         $set: {
             name: body.name,
             address: body.address,
             desc: body.desc,
             lat: body.lat,
-            long: body.long
+            long: body.long,
+			areaid:body.areaid
         }
     }, function (err) {
         if (err) {

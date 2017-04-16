@@ -8,5 +8,6 @@ module.exports = mongoose.model('FireHydrant', new Schema({
     desc: String,
     lat: Number,
     long: Number,
-    coordinates:[]
+    coordinates:[],
+	areaid: Number
 }));

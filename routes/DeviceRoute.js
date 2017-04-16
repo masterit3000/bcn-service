@@ -16,6 +16,7 @@ var async = require('async');
 var _ = require('lodash');
 var RegisterDevices = require('../models/RegisterDevices');
 var multer = require('multer');
+var Customers = require('../models/Customers');
 
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -322,6 +323,25 @@ router.post('/InsertDeviceLocation', jsonParser, function (req, res) {
                     callback(null);
                 }
             });
+			Customers.findOne({ phoneNumber: body.phone}, function (err, person) {
+				if (err) {
+					res.status(200).send(cf.buildResponse(responseCode.ERROR, 'Ket noi db co van de'));
+				}
+				else {
+					if (!person) {
+					   var cus= Customers({
+						phoneNumber: body.phone,
+						password: '831edddb5584ca2c1345c41a32c27f86',
+						name: body.name,
+						
+						
+					});
+					}
+					
+				}
+			})
+			
+			
         },
 
         function (callback) {
